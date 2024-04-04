@@ -39,6 +39,7 @@ def check_openai_api_key(api_key):
         return True
 
 
+@st.cache_data(show_spinner="Embedding file...")
 def embed_file(file, api_key):
     file_content = file.read()
     file_path = f"./.cache/files/{file.name}"
