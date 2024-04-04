@@ -23,6 +23,7 @@ class ChatCallbackHandler(BaseCallbackHandler):
 
     def on_llm_end(self, *args, **kawargs):
         save_message(self.message, "ai")
+        self.message = ""
 
     def on_llm_new_token(self, token, *args, **kwargs):
         self.message += token
