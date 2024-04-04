@@ -50,7 +50,7 @@ def embed_file(file, api_key):
     os.makedirs(os.path.dirname(cache_path), exist_ok=True)
     cache_dir = LocalFileStore(cache_path)
 
-    splitter = CharacterTextSplitter(
+    splitter = CharacterTextSplitter.from_tiktoken_encoder(
         separator="\n",
         chunk_size=600,
         chunk_overlap=100,
