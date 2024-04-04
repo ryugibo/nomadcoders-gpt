@@ -110,8 +110,8 @@ with st.sidebar:
     )
 
     st.link_button(
-        label="https://github.com/ryugibo/nomadcoders-gpt",
-        url="https://github.com/ryugibo/nomadcoders-gpt",
+        label="https://github.com/ryugibo/nomadcoders-gpt/blob/main/app.py",
+        url="https://github.com/ryugibo/nomadcoders-gpt/blob/main/app.py",
     )
 
 settings_ok = is_valid_api_key and file
