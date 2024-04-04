@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import openai
+import os
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import UnstructuredFileLoader
@@ -41,10 +42,13 @@ def check_openai_api_key(api_key):
 def embed_file(file, api_key):
     file_content = file.read()
     file_path = f"./.cache/files/{file.name}"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "wb") as f:
         f.write(file_content)
 
-    cache_dir = LocalFileStore(f"./.cache/embeddings/{file.name}")
+    cache_path = f"./.cache/embeddings/{file.name}"
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    cache_dir = LocalFileStore(cache_path)
 
     splitter = CharacterTextSplitter(
         separator="\n",
