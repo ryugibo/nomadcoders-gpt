@@ -103,7 +103,10 @@ with st.sidebar:
 
     is_valid_api_key = check_openai_api_key(api_key) if api_key else False
 
-    file = st.file_uploader("file")
+    file = st.file_uploader(
+        "file",
+        type=["txt", "pdf", "docx"],
+    )
 
     st.link_button(
         label="https://github.com/ryugibo/nomadcoders-gpt",
