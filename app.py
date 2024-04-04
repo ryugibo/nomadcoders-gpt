@@ -124,6 +124,7 @@ if settings_ok:
                 return_messages=True, memory_key="history"
             ),
             "llm": ChatOpenAI(
+                api_key=api_key,
                 temperature=1e-1,
                 streaming=True,
                 callbacks=[
