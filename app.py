@@ -118,29 +118,35 @@ settings_ok = is_valid_api_key and file
 
 message = st.chat_input("Enter a question", disabled=not settings_ok)
 if settings_ok:
-    memory = ConversationBufferMemory(return_messages=True, memory_key="history")
-    llm = ChatOpenAI(
-        temperature=1e-1,
-        streaming=True,
-        callbacks=[
-            ChatCallbackHandler(),
-        ],
-    )
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a helpful assistant. Answer questions using only the following context. If you don't know the answer just say you don't know, don't make it up:\n\n{context}",
+    if "langchain" not in st.session_state:
+        st.session_state["langchain"] = {
+            "memory": ConversationBufferMemory(
+                return_messages=True, memory_key="history"
             ),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}"),
-        ]
-    )
+            "llm": ChatOpenAI(
+                temperature=1e-1,
+                streaming=True,
+                callbacks=[
+                    ChatCallbackHandler(),
+                ],
+            ),
+            "prompt": ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        "You are a helpful assistant. Answer questions using only the following context. If you don't know the answer just say you don't know, don't make it up:\n\n{context}",
+                    ),
+                    MessagesPlaceholder(variable_name="history"),
+                    ("human", "{question}"),
+                ]
+            ),
+        }
     retriever = embed_file(file, api_key)
     send_message("I'm ready! Ask away", "ai", False)
     paint_history()
     if message:
         send_message(message, "human")
+        memory = st.session_state["langchain"]["memory"]
         chain = (
             {
                 "context": retriever,
@@ -149,8 +155,8 @@ if settings_ok:
                     lambda _: memory.load_memory_variables({})["history"]
                 ),
             }
-            | prompt
-            | llm
+            | st.session_state["langchain"]["prompt"]
+            | st.session_state["langchain"]["llm"]
         )
         with st.chat_message("ai"):
             response = chain.invoke(message)
