@@ -116,6 +116,7 @@ with st.sidebar:
 
 settings_ok = is_valid_api_key and file
 
+message = st.chat_input("Enter a question", disabled=not settings_ok)
 if settings_ok:
     memory = ConversationBufferMemory(return_messages=True, memory_key="history")
     llm = ChatOpenAI(
@@ -138,7 +139,6 @@ if settings_ok:
     retriever = embed_file(file, api_key)
     send_message("I'm ready! Ask away", "ai", False)
     paint_history()
-    message = st.chat_input("Enter a question", disabled=not settings_ok)
     if message:
         send_message(message, "human")
         chain = (
