@@ -96,6 +96,11 @@ def format_docs(docs):
 
 
 with st.sidebar:
+    st.link_button(
+        label="https://github.com/ryugibo/nomadcoders-gpt/blob/main/pages/01_QuizGPT.py",
+        url="https://github.com/ryugibo/nomadcoders-gpt/blob/main/pages/01_QuizGPT.py",
+    )
+
     api_key = st.text_input("OPENAI API KEY")
 
     docs = None
