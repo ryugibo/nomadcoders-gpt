@@ -7,6 +7,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks import StreamingStdOutCallbackHandler
+from langchain.schema.runnable import RunnableLambda
 from utils.openai import check_openai_api_key
 
 
@@ -64,7 +65,7 @@ def split_file(file):
 
 
 @st.cache_data(show_spinner="Making quiz...")
-def run_quiz_chain(topic, _docs, _llm):
+def run_quiz_chain(topic, _docs, _llm, difficulty):
     questions_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -72,7 +73,7 @@ def run_quiz_chain(topic, _docs, _llm):
                 """
                 You are a helpful assistant that is role playing as a teacher.
 
-                Based ONLY on the following context make 10 questions to test the user's knowledge about the text.
+                Based ONLY on the following context make 10 {difficulty} difficulty questions to test the user's knowledge about the text.
 
                 Each question should have 4 answers, three of them must be incorrect and one should be correct.
 
@@ -81,7 +82,14 @@ def run_quiz_chain(topic, _docs, _llm):
             )
         ]
     )
-    chain = {"context": format_docs} | questions_prompt | _llm
+    chain = (
+        {
+            "context": format_docs,
+            "difficulty": RunnableLambda(lambda _: difficulty.upper()),
+        }
+        | questions_prompt
+        | _llm
+    )
     return chain.invoke(_docs)
 
 
@@ -102,6 +110,8 @@ with st.sidebar:
     )
 
     api_key = st.text_input("OPENAI API KEY")
+
+    difficulty = st.radio("Select difficulty", ["Easy", "Hard"])
 
     docs = None
     choice = st.selectbox(
@@ -186,7 +196,7 @@ else:
         functions=[function],
     )
 
-    response = run_quiz_chain(topic if topic else file.name, docs, llm)
+    response = run_quiz_chain(topic if topic else file.name, docs, llm, difficulty)
     with st.form("questions_form"):
         questions = json.loads(response.additional_kwargs["function_call"]["arguments"])
         all_correct = create_quiz(questions["questions"])
