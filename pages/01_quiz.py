@@ -8,6 +8,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.schema import BaseOutputParser
+from utils.openai import check_openai_api_key
 
 
 class JsonOutputParser(BaseOutputParser):
@@ -20,15 +21,6 @@ output_parser = JsonOutputParser()
 
 st.set_page_config(page_title="QuizGPT", page_icon="❓")
 st.title("QuizGPT")
-
-llm = ChatOpenAI(
-    temperature=1e-1,
-    model="gpt-3.5-turbo-0125",
-    streaming=True,
-    callbacks=[
-        StreamingStdOutCallbackHandler(),
-    ],
-)
 
 
 @st.cache_data(show_spinner="Loading file...")
@@ -66,168 +58,9 @@ def format_docs(docs):
     return "\n\n".join([document.page_content for document in docs])
 
 
-questions_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-            You are a helpful assistant that is role playing as a teacher.
-
-            Based ONLY on the following context make 1`0 questions to test the user's knowledge about the text.
-
-            Each question should have 4 answers, three of them must be incorrect and one should be correct.
-
-            Use (o) to signal the correct answer.
-
-            Question examples:
-
-            Question: What is the color of the ocean?
-            Answers: Red|Yellow|Green|Blue(o)
-
-            Question: What is the capital or Georgia?
-            Answers: Baku|Tbilisi(o)|Manila|Beirut
-
-            Question: When was Avatar released?
-            Answers: 2007|2001|2009(o)|1998
-
-            Question: Who was Julius Caesar?
-            Answers: A Roman Emperor(o)|Painter|Actor|Model
-
-            Your turn!
-
-            Context: {context}
-            """,
-        )
-    ]
-)
-
-questions_chain = {"context": format_docs} | questions_prompt | llm
-
-formatting_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-    You are a powerful formatting algorithm.
-     
-    You format exam questions into JSON format.
-    Answers with (o) are the correct ones.
-     
-    Example Input:
-    Question: What is the color of the ocean?
-    Answers: Red|Yellow|Green|Blue(o)
-         
-    Question: What is the capital or Georgia?
-    Answers: Baku|Tbilisi(o)|Manila|Beirut
-         
-    Question: When was Avatar released?
-    Answers: 2007|2001|2009(o)|1998
-         
-    Question: Who was Julius Caesar?
-    Answers: A Roman Emperor(o)|Painter|Actor|Model
-    
-     
-    Example Output:
-     
-    ```json
-    {{ "questions": [
-            {{
-                "question": "What is the color of the ocean?",
-                "answers": [
-                        {{
-                            "answer": "Red",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Yellow",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Green",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Blue",
-                            "correct": true
-                        }},
-                ]
-            }},
-                        {{
-                "question": "What is the capital or Georgia?",
-                "answers": [
-                        {{
-                            "answer": "Baku",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Tbilisi",
-                            "correct": true
-                        }},
-                        {{
-                            "answer": "Manila",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Beirut",
-                            "correct": false
-                        }},
-                ]
-            }},
-                        {{
-                "question": "When was Avatar released?",
-                "answers": [
-                        {{
-                            "answer": "2007",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "2001",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "2009",
-                            "correct": true
-                        }},
-                        {{
-                            "answer": "1998",
-                            "correct": false
-                        }},
-                ]
-            }},
-            {{
-                "question": "Who was Julius Caesar?",
-                "answers": [
-                        {{
-                            "answer": "A Roman Emperor",
-                            "correct": true
-                        }},
-                        {{
-                            "answer": "Painter",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Actor",
-                            "correct": false
-                        }},
-                        {{
-                            "answer": "Model",
-                            "correct": false
-                        }},
-                ]
-            }}
-        ]
-     }}
-    ```
-    Your turn!
-    Questions: {context}
-            """,
-        )
-    ]
-)
-
-formatting_chain = formatting_prompt | llm
-
 with st.sidebar:
+    api_key = st.text_input("OPENAI API KEY")
+
     docs = None
     choice = st.selectbox(
         "Choose what you want to use.",
@@ -248,7 +81,7 @@ with st.sidebar:
         if topic:
             docs = wiki_search(topic)
 
-if not docs:
+if not docs or not check_openai_api_key(api_key):
     st.markdown(
         """
         Welcom to Quiz GPT.
@@ -260,6 +93,177 @@ if not docs:
         """
     )
 else:
+    llm = ChatOpenAI(
+        temperature=1e-1,
+        model="gpt-3.5-turbo-0125",
+        streaming=True,
+        callbacks=[
+            StreamingStdOutCallbackHandler(),
+        ],
+        api_key=api_key,
+    )
+
+    questions_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """
+                You are a helpful assistant that is role playing as a teacher.
+
+                Based ONLY on the following context make 1`0 questions to test the user's knowledge about the text.
+
+                Each question should have 4 answers, three of them must be incorrect and one should be correct.
+
+                Use (o) to signal the correct answer.
+
+                Question examples:
+
+                Question: What is the color of the ocean?
+                Answers: Red|Yellow|Green|Blue(o)
+
+                Question: What is the capital or Georgia?
+                Answers: Baku|Tbilisi(o)|Manila|Beirut
+
+                Question: When was Avatar released?
+                Answers: 2007|2001|2009(o)|1998
+
+                Question: Who was Julius Caesar?
+                Answers: A Roman Emperor(o)|Painter|Actor|Model
+
+                Your turn!
+
+                Context: {context}
+                """,
+            )
+        ]
+    )
+
+    questions_chain = {"context": format_docs} | questions_prompt | llm
+
+    formatting_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """
+        You are a powerful formatting algorithm.
+        
+        You format exam questions into JSON format.
+        Answers with (o) are the correct ones.
+        
+        Example Input:
+        Question: What is the color of the ocean?
+        Answers: Red|Yellow|Green|Blue(o)
+            
+        Question: What is the capital or Georgia?
+        Answers: Baku|Tbilisi(o)|Manila|Beirut
+            
+        Question: When was Avatar released?
+        Answers: 2007|2001|2009(o)|1998
+            
+        Question: Who was Julius Caesar?
+        Answers: A Roman Emperor(o)|Painter|Actor|Model
+        
+        
+        Example Output:
+        
+        ```json
+        {{ "questions": [
+                {{
+                    "question": "What is the color of the ocean?",
+                    "answers": [
+                            {{
+                                "answer": "Red",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Yellow",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Green",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Blue",
+                                "correct": true
+                            }},
+                    ]
+                }},
+                            {{
+                    "question": "What is the capital or Georgia?",
+                    "answers": [
+                            {{
+                                "answer": "Baku",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Tbilisi",
+                                "correct": true
+                            }},
+                            {{
+                                "answer": "Manila",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Beirut",
+                                "correct": false
+                            }},
+                    ]
+                }},
+                            {{
+                    "question": "When was Avatar released?",
+                    "answers": [
+                            {{
+                                "answer": "2007",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "2001",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "2009",
+                                "correct": true
+                            }},
+                            {{
+                                "answer": "1998",
+                                "correct": false
+                            }},
+                    ]
+                }},
+                {{
+                    "question": "Who was Julius Caesar?",
+                    "answers": [
+                            {{
+                                "answer": "A Roman Emperor",
+                                "correct": true
+                            }},
+                            {{
+                                "answer": "Painter",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Actor",
+                                "correct": false
+                            }},
+                            {{
+                                "answer": "Model",
+                                "correct": false
+                            }},
+                    ]
+                }}
+            ]
+        }}
+        ```
+        Your turn!
+        Questions: {context}
+                """,
+            )
+        ]
+    )
+
+    formatting_chain = formatting_prompt | llm
+
     response = run_quiz_chain(docs, topic if topic else file.name)
     with st.form("questions_form"):
         for question in response["questions"]:
