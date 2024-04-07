@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import openai
 import os
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import CharacterTextSplitter
@@ -12,6 +11,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.memory import ConversationBufferMemory
+from utils.openai import check_openai_api_key
 
 
 class ChatCallbackHandler(BaseCallbackHandler):
@@ -28,16 +28,6 @@ class ChatCallbackHandler(BaseCallbackHandler):
     def on_llm_new_token(self, token, *args, **kwargs):
         self.message += token
         self.message_box.markdown(self.message)
-
-
-def check_openai_api_key(api_key):
-    openai.api_key = api_key
-    try:
-        openai.Model.list()
-    except openai.error.AuthenticationError as e:
-        return False
-    else:
-        return True
 
 
 @st.cache_data(show_spinner="Embedding file...")
