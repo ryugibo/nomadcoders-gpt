@@ -17,6 +17,36 @@ class JsonOutputParser(BaseOutputParser):
         return json.loads(text)
 
 
+class Quiz:
+    def __init__(self, question, index):
+        self.question = question["question"]
+        self.answers = question["answers"]
+        self.select = None
+        self.index = index
+
+    def render(self):
+        st.write(self.question)
+        self.select = st.radio(
+            "Select an option",
+            [answer["answer"] for answer in self.answers],
+            index=None,
+            key=self.index,
+        )
+        if {"answer": self.select, "correct": True} in self.answers:
+            st.success("Correct")
+            return True
+        elif self.select is not None:
+            st.error("Wrong")
+        return False
+
+
+def create_quiz(questions):
+    all_correct = True
+    for i, question in enumerate(questions):
+        all_correct = Quiz(question, i).render() and all_correct
+    return all_correct
+
+
 output_parser = JsonOutputParser()
 
 st.set_page_config(page_title="QuizGPT", page_icon="❓")
@@ -266,15 +296,7 @@ else:
 
     response = run_quiz_chain(docs, topic if topic else file.name)
     with st.form("questions_form"):
-        for question in response["questions"]:
-            st.write(question["question"])
-            value = st.radio(
-                "Select an option",
-                [answer["answer"] for answer in question["answers"]],
-                index=None,
-            )
-            if {"answer": value, "correct": True} in question["answers"]:
-                st.success("Correct")
-            elif value is not None:
-                st.error("Wrong")
-        button = st.form_submit_button()
+        if create_quiz(response["questions"]):
+            st.balloons()
+        else:
+            button = st.form_submit_button()
