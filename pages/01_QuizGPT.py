@@ -187,5 +187,4 @@ else:
         all_correct = create_quiz(questions["questions"])
         if all_correct:
             st.balloons()
-        else:
-            button = st.form_submit_button()
+        st.form_submit_button(disabled=all_correct)
