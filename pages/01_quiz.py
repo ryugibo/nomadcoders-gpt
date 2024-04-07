@@ -7,14 +7,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks import StreamingStdOutCallbackHandler
-from langchain.schema import BaseOutputParser
 from utils.openai import check_openai_api_key
-
-
-class JsonOutputParser(BaseOutputParser):
-    def parse(self, text):
-        text = text.replace("```", "").replace("json", "")
-        return json.loads(text)
 
 
 class Quiz:
@@ -46,8 +39,6 @@ def create_quiz(questions):
         all_correct = Quiz(question, i).render() and all_correct
     return all_correct
 
-
-output_parser = JsonOutputParser()
 
 st.set_page_config(page_title="QuizGPT", page_icon="❓")
 st.title("QuizGPT")
@@ -185,7 +176,10 @@ else:
             StreamingStdOutCallbackHandler(),
         ],
         api_key=api_key,
-    ).bind(function_call={"name": "create_quiz"}, functions=[function])
+    ).bind(
+        function_call={"name": "create_quiz"},
+        functions=[function],
+    )
 
     response = run_quiz_chain(topic if topic else file.name, docs, llm)
     with st.form("questions_form"):
