@@ -59,22 +59,6 @@ class WebsiteCrawlTool(BaseTool):
         return url
 
 
-class WriteTxtTool(BaseTool):
-    name = "WriteTxt"
-    description = """
-    Use this tool to write information into txt file.
-    It takes arguments like "{{"filename": "xxx.txt", "information": "aaaa"}}"
-    """
-    arg_schema: Type[WriteTxtToolArgsSchema] = WriteTxtToolArgsSchema
-
-    def _run(self, information):
-        path = "result.txt"
-        f = open(path, "w", encoding="utf-8")
-        f.write(information)
-        f.close()
-        return path
-
-
 st.set_page_config(page_title="SearchGPT", page_icon="🌥️")
 st.title("SearchGPT")
 
@@ -100,7 +84,6 @@ if check_openai_api_key(api_key):
             WikipediaSearchTool(),
             DuckDuckGoSearchTool(),
             WebsiteCrawlTool(),
-            WriteTxtTool(),
         ],
         agent_kwargs={
             "system_message": SystemMessage(
@@ -112,8 +95,6 @@ if check_openai_api_key(api_key):
                 You Wikipedia or DuckDuckGo.
 
                 if you used DuckDuckGo, crawl informations from each websites.
-                
-                finally, information write into txt file named keyword.
                 """
             )
         },
