@@ -30,7 +30,7 @@ class ChatCallbackHandler(BaseCallbackHandler):
         self.message_box.markdown(self.message)
 
 
-@st.cache_data(show_spinner="Embedding file...")
+@st.cache_resource(show_spinner="Embedding file...")
 def embed_file(file, api_key):
     file_content = file.read()
     file_path = f"./.cache/files/{file.name}"
@@ -156,21 +156,17 @@ else:
     st.session_state["messages"] = []
     st.warning("Please, complete settings on sidebar.", icon="⚠️")
 
-    with st.status("Wait for complete settings..", expanded=True):
-        if is_valid_api_key:
-            st.success("OPENAI API KEY OK", icon="🔑")
-        elif api_key:
-            st.warning(
-                "OPEN API KEY is invalid. check https://platform.openai.com/api-keys",
-                icon="⚠️",
-            )
-        else:
-            st.warning("Please, enter a OPEN API KEY", icon="⚠️")
+    if is_valid_api_key:
+        st.success("OPENAI API KEY OK", icon="🔑")
+    elif api_key:
+        st.warning(
+            "OPEN API KEY is invalid. check https://platform.openai.com/api-keys",
+            icon="⚠️",
+        )
+    else:
+        st.warning("Please, enter a OPEN API KEY", icon="⚠️")
 
-        if file:
-            st.success("OK, File uploaded.", icon="📁")
-        else:
-            st.warning("Please, upload file.", icon="⚠️")
-
-        while not is_valid_api_key or not file:
-            time.sleep(0.2)
+    if file:
+        st.success("OK, File uploaded.", icon="📁")
+    else:
+        st.warning("Please, upload file.", icon="⚠️")
