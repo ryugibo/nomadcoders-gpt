@@ -20,6 +20,11 @@ def send_message(message, role, save=True):
         save_message(message, role)
 
 
+def paint_history():
+    for message in st.session_state["messages"]:
+        send_message(message["message"], message["role"], False)
+
+
 class SearchToolArgsSchema(BaseModel):
     keyword: str = Field(description="The keyword you will search for.")
 
@@ -115,10 +120,11 @@ if is_valid_api_key:
         )
 
     send_message("I'm ready! Ask away", "ai", False)
-
+    paint_history()
     if message:
         send_message(message, "human")
         response = st.session_state["agent"].invoke(message)
         send_message(response["output"], "ai")
 else:
+    st.session_state["messages"] = []
     st.warning("Input open ai api key in sidebar")
