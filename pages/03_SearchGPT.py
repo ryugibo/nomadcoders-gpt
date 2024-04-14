@@ -9,6 +9,17 @@ from langchain.schema import SystemMessage
 from pydantic import BaseModel, Field
 
 
+def save_message(message, role):
+    st.session_state["messages"].append({"message": message, "role": role})
+
+
+def send_message(message, role, save=True):
+    with st.chat_message(role):
+        st.write(message)
+    if save:
+        save_message(message, role)
+
+
 class SearchToolArgsSchema(BaseModel):
     keyword: str = Field(description="The keyword you will search for.")
 
@@ -70,24 +81,27 @@ with st.sidebar:
 
     api_key = st.text_input("OPENAI API KEY")
 
-if check_openai_api_key(api_key):
-    llm = ChatOpenAI(
-        api_key=api_key,
-        temperature=1e-1,
-    )
-    agent = initialize_agent(
-        llm=llm,
-        verbose=True,
-        agent=AgentType.OPENAI_FUNCTIONS,
-        handle_parsing_errors=True,
-        tools=[
-            WikipediaSearchTool(),
-            DuckDuckGoSearchTool(),
-            WebsiteCrawlTool(),
-        ],
-        agent_kwargs={
-            "system_message": SystemMessage(
-                content="""
+    is_valid_api_key = check_openai_api_key(api_key) if api_key else False
+
+message = st.chat_input("Enter a question", disabled=not is_valid_api_key)
+if is_valid_api_key:
+    if "langchain" not in st.session_state:
+        st.session_state["agent"] = initialize_agent(
+            llm=ChatOpenAI(
+                api_key=api_key,
+                temperature=1e-1,
+            ),
+            verbose=True,
+            agent=AgentType.OPENAI_FUNCTIONS,
+            handle_parsing_errors=True,
+            tools=[
+                WikipediaSearchTool(),
+                DuckDuckGoSearchTool(),
+                WebsiteCrawlTool(),
+            ],
+            agent_kwargs={
+                "system_message": SystemMessage(
+                    content="""
                 You are a information collector.
                 
                 You find a information about keyword.
@@ -96,10 +110,15 @@ if check_openai_api_key(api_key):
 
                 if you used DuckDuckGo, crawl informations from each websites.
                 """
-            )
-        },
-    )
+                )
+            },
+        )
 
-    agent.invoke("Research about the XZ backdoor")
+    send_message("I'm ready! Ask away", "ai", False)
+
+    if message:
+        send_message(message, "human")
+        response = st.session_state["agent"].invoke(message)
+        send_message(response["output"], "ai")
 else:
     st.warning("Input open ai api key in sidebar")
